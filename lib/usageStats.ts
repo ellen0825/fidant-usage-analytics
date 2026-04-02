@@ -155,16 +155,17 @@ export async function computeUsageStats(
   const limit = PLAN_LIMITS[planTier] ?? PLAN_LIMITS["starter"];
 
   // Try cache first; fall back to raw query
-  let aggregates = await fetchCachedAggregates(userId, dateKeys);
-  let fromCache = aggregates !== null;
+  let aggregates: Map<string, { committed: number; reserved: number }>;
+  const cached = await fetchCachedAggregates(userId, dateKeys);
 
-  if (!fromCache) {
+  if (cached === null) {
     aggregates = await fetchRawAggregates(userId, dateKeys);
     // Populate cache for historical dates in the background (fire-and-forget)
     updateCache(userId, aggregates, dateKeys).catch(() => {
       // Non-critical — log in production, ignore here
     });
   } else {
+    aggregates = cached;
     // Cache hit for historical; still need live data for today
     const todayKey = toDateKey(new Date());
     const todayRaw = await fetchRawAggregates(userId, [todayKey]);
@@ -173,7 +174,7 @@ export async function computeUsageStats(
 
   // Build per-day stats
   const dayStats: DayStats[] = dateKeys.map((dateKey) => {
-    const agg = aggregates!.get(dateKey) ?? { committed: 0, reserved: 0 };
+    const agg = aggregates.get(dateKey) ?? { committed: 0, reserved: 0 };
     const utilization =
       limit > 0 ? Math.round((agg.committed / limit) * 100) / 100 : 0;
     return {
