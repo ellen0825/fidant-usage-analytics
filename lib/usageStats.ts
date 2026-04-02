@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { PLAN_LIMITS, STALE_RESERVATION_MINUTES, CACHE_TTL_MINUTES } from "./constants";
-import type { DayStats, Summary, UsageStatsResponse } from "./types";
+import type { DayStats, UsageStatsResponse } from "./types";
 
 /** Format a Date as "YYYY-MM-DD" in UTC */
 function toDateKey(d: Date): string {
